@@ -1,93 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-  <title>IoT Smart Pad</title>
-  <!-- MQTT के लिए जावास्क्रिप्ट लाइब्रेरी -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <style>
-    body { text-align: center; background: #111; color: white; font-family: Arial; padding: 20px; }
-    canvas { background: #000; border: 2px solid #0f0; border-radius: 8px; width: 90vw; height: 45vw; touch-action: none; max-width: 600px; max-height: 300px; box-shadow: 0 0 15px #0f0;}
-    button { margin-top: 20px; padding: 15px 30px; font-size: 18px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    #status { color: orange; font-weight: bold; margin-bottom: 10px; }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+<title>IoT Notepad</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<style>
+body { text-align: center; background: #2c3e50; color: white; font-family: Arial; padding: 20px; }
+textarea { width: 90%; height: 150px; font-size: 18px; padding: 10px; border-radius: 8px; border: 2px solid #3498db; background: #ecf0f1; color: #333; resize: none; margin-bottom: 15px;}
+button { padding: 12px 25px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; width: 40%;}
+button:active { background: #2980b9; }
+.clear-btn { background: #e74c3c; }
+.clear-btn:active { background: #c0392b; }
+select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px; width: 40%; }
+#status { color: #f1c40f; font-weight: bold; margin-bottom: 15px; }
+</style>
 </head>
 <body>
-  <h2>Global IoT Smart Pad</h2>
-  <div id="status">Connecting to Cloud...</div>
-  <canvas id="pad" width="128" height="64"></canvas>
-  <br>
-  <button onclick="clearScreen()">Clear Display</button>
+<h2>ESP32 IoT Notepad</h2>
+<div id="status">Connecting to Cloud...</div>
+<textarea id="messageBox" placeholder="यहाँ अपना मैसेज टाइप करें..."></textarea>
 
-  <script>
-    var mqttClient;
-    var host = "broker.hivemq.com";
-    var port = 8000; // WebSockets Port
-    var topic = "esp32_smartpad_12345"; // ध्यान दें: यह नाम आपके ESP32 कोड वाले नाम से मैच होना चाहिए!
+<label for="textSize">Text Size: </label>
+<select id="textSize" onchange="changeSize()">
+<option value="1">Small (1)</option>
+<option value="2">Medium (2)</option>
+<option value="3">Large (3)</option>
+</select>
 
-    // इंटरनेट क्लाउड (MQTT) से कनेक्ट होना
-    function MQTTconnect() {
-      var clientId = "WebClient-" + Math.floor(Math.random() * 10000);
-      mqttClient = new Paho.MQTT.Client(host, port, clientId);
-      mqttClient.connect({
-        onSuccess: function() {
-          document.getElementById("status").innerText = "Cloud Connected! Start Drawing.";
-          document.getElementById("status").style.color = "#0f0";
-        }
-      });
-    }
-    MQTTconnect();
 
-    // इंटरनेट पर डेटा भेजना
-    function sendData(msg) {
-      if (mqttClient && mqttClient.isConnected()) {
-        var message = new Paho.MQTT.Message(msg);
-        message.destinationName = topic;
-        mqttClient.send(message);
-      }
-    }
-
-    let canvas = document.getElementById('pad');
-    let ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    let lastTime = 0;
-
-    // लोकेशन पता करना
-    function getPos(e) {
-      let rect = canvas.getBoundingClientRect();
-      let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      let x = Math.round((clientX - rect.left) * (128 / rect.width));
-      let y = Math.round((clientY - rect.top) * (64 / rect.height));
-      return {x, y};
-    }
-
-    function draw(e) {
-      if (!isDrawing) return;
-      e.preventDefault();
-      let pos = getPos(e);
-      
-      let now = Date.now();
-      if (now - lastTime > 40) { // हर 40 मिलीसेकंड में डेटा भेजना
-        ctx.fillStyle = 'white';
-        ctx.fillRect(pos.x, pos.y, 2, 2); 
-        sendData(pos.x + "," + pos.y); // X,Y डेटा क्लाउड पर भेजना
-        lastTime = now;
-      }
-    }
-
-    // मोबाइल और कंप्यूटर दोनों के कंट्रोल्स
-    canvas.addEventListener('touchstart', e => { isDrawing = true; draw(e); }, {passive: false});
-    canvas.addEventListener('touchmove', draw, {passive: false});
-    window.addEventListener('touchend', () => { isDrawing = false; });
-    canvas.addEventListener('mousedown', e => { isDrawing = true; draw(e); });
-    canvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', () => { isDrawing = false; });
-
-    function clearScreen() {
-      ctx.clearRect(0, 0, 128, 64);
-      sendData("clear");
-    }
-  </script>
+<button onclick="sendText()">Send to OLED</button>
+<button class="clear-btn" onclick="clearScreen()">Clear OLED</button>
+<script>
+var mqttClient;
+var host = "broker.hivemq.com";
+// --- बदलाव यहाँ किया गया है ---
+var port = 8884; // HTTPS के लिए secure port 8884 और SSL ज़रूरी है
+// ----------------------------
+var topic = "esp32_notepad_mirzapur_123";
+function MQTTconnect() {
+var clientId = "NoteClient-" + Math.floor(Math.random() * 10000);
+mqttClient = new Paho.MQTT.Client(host, port, clientId);
+var options = {
+useSSL: true, // यह लाइन जोड़ दी गई है ताकि GitHub की वेबसाइट से सिक्योर कनेक्शन बन सके
+onSuccess: function() {
+document.getElementById("status").innerText = "Ready to Send!";
+document.getElementById("status").style.color = "#2ecc71";
+},
+onFailure: function(message) {
+document.getElementById("status").innerText = "Connection Failed: " + message.errorMessage;
+document.getElementById("status").style.color = "#e74c3c";
+}
+};
+mqttClient.connect(options);
+}
+MQTTconnect();
+function sendData(msg) {
+if (mqttClient && mqttClient.isConnected()) {
+var message = new Paho.MQTT.Message(msg);
+message.destinationName = topic;
+mqttClient.send(message);
+} else {
+alert("Cloud is not connected yet!");
+}
+}
+function sendText() {
+var text = document.getElementById("messageBox").value;
+if (text.length > 0) {
+sendData(text);
+}
+}
+function clearScreen() {
+document.getElementById("messageBox").value = "";
+sendData("clear");
+}
+function changeSize() {
+var size = document.getElementById("textSize").value;
+sendData("size:" + size);
+}
+</script>
 </body>
 </html>
