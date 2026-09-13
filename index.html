@@ -2,63 +2,233 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-<title>Abhishek Smart Notepad</title>
+<title>Stark HUD - Abhishek Smart Notepad</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 <style>
-body { text-align: center; background: #2c3e50; color: white; font-family: Arial; padding: 20px; }
-textarea { width: 90%; height: 150px; font-size: 18px; padding: 10px; border-radius: 8px; border: 2px solid #3498db; background: #ecf0f1; color: #333; resize: none; margin-bottom: 15px;}
-button { padding: 12px 25px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; width: 40%;}
-button:active { background: #2980b9; }
-.clear-btn { background: #e74c3c; }
-.clear-btn:active { background: #c0392b; }
-select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px; width: 40%; }
-#status { color: #f1c40f; font-weight: bold; margin-bottom: 15px; }
-.subtitle { color: #3498db; font-size: 20px; margin-top: -10px; margin-bottom: 5px; font-weight: bold; }
-.tagline { color: #e67e22; font-size: 14px; margin-bottom: 15px; font-style: italic; }
+body { 
+    text-align: center; 
+    background: #030712; 
+    color: #00f0ff; 
+    font-family: 'Courier New', Courier, monospace; 
+    padding: 15px; 
+}
+h2 { color: #00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.6); margin-bottom: 5px; }
+.subtitle { color: #38bdf8; font-size: 18px; font-weight: bold; margin-bottom: 2px; }
+.tagline { color: #f97316; font-size: 13px; margin-bottom: 15px; font-style: italic; text-shadow: 0 0 5px rgba(249,115,22,0.5); }
+
+#status { color: #facc15; font-weight: bold; margin-bottom: 15px; font-size: 14px; text-shadow: 0 0 5px rgba(250,204,21,0.5); }
+
+/* OLED Live Preview Screen (Stark HUD style) */
+.oled-preview {
+    width: 256px;
+    height: 128px;
+    background: #000000;
+    border: 3px solid #00f0ff;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2);
+    border-radius: 6px;
+    margin: 0 auto 20px auto;
+    padding: 10px;
+    text-align: left;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+}
+.preview-line {
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 1.2;
+}
+
+/* Row Input Fields */
+.input-container {
+    width: 90%;
+    max-width: 350px;
+    margin: 0 auto 15px auto;
+    text-align: left;
+}
+.input-container label {
+    font-size: 13px;
+    color: #38bdf8;
+    display: block;
+    margin-bottom: 3px;
+}
+.row-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 2px solid #00f0ff;
+    background: #0b1329;
+    color: #ffffff;
+    box-sizing: border-box;
+    outline: none;
+    box-shadow: inset 0 0 5px rgba(0,240,255,0.3);
+}
+.row-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 8px rgba(0,240,255,0.8);
+}
+
+select { 
+    padding: 10px; 
+    font-size: 16px; 
+    border-radius: 4px; 
+    background: #0b1329; 
+    color: #00f0ff; 
+    border: 2px solid #00f0ff; 
+    margin-bottom: 15px; 
+    width: 90%; 
+    max-width: 350px;
+}
+
+button { 
+    padding: 12px 25px; 
+    font-size: 16px; 
+    background: linear-gradient(135deg, #0284c7, #0369a1); 
+    color: white; 
+    border: 1px solid #00f0ff; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    margin: 5px; 
+    width: 42%;
+    max-width: 170px;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0,240,255,0.3);
+    transition: 0.2s;
+}
+button:hover { background: linear-gradient(135deg, #0369a1, #0284c7); box-shadow: 0 0 15px rgba(0,240,255,0.6); }
+button:active { transform: scale(0.98); }
+
+.clear-btn { 
+    background: linear-gradient(135deg, #dc2626, #991b1b); 
+    border-color: #ef4444; 
+    box-shadow: 0 0 10px rgba(239,68,68,0.3);
+}
+.clear-btn:hover { background: linear-gradient(135deg, #991b1b, #dc2626); box-shadow: 0 0 15px rgba(239,68,68,0.6); }
 </style>
 </head>
 <body>
-<h2>ESP32 IoT Notepad</h2>
+
+<h2>STARK INDUSTRIES</h2>
 <div class="subtitle">Abhishek Smart Notepad</div>
-<div class="tagline">Inspired by Tony Stark</div>
+<div class="tagline">J.A.R.V.I.S. OLED Control HUD</div>
 <div id="status">Connecting to Cloud...</div>
 
-<!-- यहाँ प्लेसहोलर "Drop your message" कर दिया गया है और Small के अनुसार max 105 अक्षर हैं -->
-<textarea id="messageBox" placeholder="Drop your message" maxlength="105"></textarea>
+<!-- लाइव ओलेड डिस्प्ले प्रिव्यू (वेबसाइट पर रियल-टाइम दिखेगा) -->
+<div class="oled-preview" id="oledPreview">
+    <div class="preview-line" id="prevLine1"></div>
+    <div class="preview-line" id="prevLine2"></div>
+    <div class="preview-line" id="prevLine3"></div>
+</div>
 
-<label for="textSize">Text Size: </label>
-<select id="textSize" onchange="changeSize()">
-<option value="1">Small (1)</option>
-<option value="2">Medium (2)</option>
-<option value="3">Large (3)</option>
-</select>
+<!-- रो-वाइज़ इनपुट बॉक्स -->
+<div class="input-container">
+    <label>Row 1:</label>
+    <input type="text" id="row1" class="row-input" placeholder="Type row 1..." maxlength="21" oninput="updatePreview()">
+</div>
+<div class="input-container">
+    <label>Row 2:</label>
+    <input type="text" id="row2" class="row-input" placeholder="Type row 2..." maxlength="21" oninput="updatePreview()">
+</div>
+<div class="input-container" id="row3Container">
+    <label>Row 3:</label>
+    <input type="text" id="row3" class="row-input" placeholder="Type row 3..." maxlength="21" oninput="updatePreview()">
+</div>
 
-<button onclick="sendText()">Send to OLED</button>
-<button class="clear-btn" onclick="clearScreen()">Clear OLED</button>
+<div>
+    <label for="textSize" style="font-size: 13px; color: #38bdf8; display: block; margin-bottom: 5px;">Text Size Mode:</label>
+    <select id="textSize" onchange="changeSize()">
+        <option value="1">Small (3 Rows)</option>
+        <option value="2">Medium (2 Rows)</option>
+        <option value="3">Large (1 Row)</option>
+    </select>
+</div>
+
+<div>
+    <button onclick="sendText()">Send to OLED</button>
+    <button class="clear-btn" onclick="clearScreen()">Clear OLED</button>
+</div>
 
 <script>
 var mqttClient;
 var host = "broker.hivemq.com";
-var port = 8884; // Secure WebSocket port
+var port = 8884;
 var topic = "esp32_notepad_mirzapur_123";
 
 function MQTTconnect() {
-  var clientId = "NoteClient-" + Math.floor(Math.random() * 10000);
+  var clientId = "StarkClient-" + Math.floor(Math.random() * 10000);
   mqttClient = new Paho.MQTT.Client(host, port, clientId);
   var options = {
     useSSL: true,
     onSuccess: function() {
-      document.getElementById("status").innerText = "Ready to Send!";
-      document.getElementById("status").style.color = "#2ecc71";
+      document.getElementById("status শক্তির").innerText = "JARVIS Connected & Ready!";
+      document.getElementById("status").style.color = "#00f0ff";
     },
     onFailure: function(message) {
       document.getElementById("status").innerText = "Connection Failed: " + message.errorMessage;
-      document.getElementById("status").style.color = "#e74c3c";
+      document.getElementById("status").style.color = "#ef4444";
     }
   };
   mqttClient.connect(options);
 }
 MQTTconnect();
+
+function updatePreview() {
+  var r1 = document.getElementById("row1").value;
+  var r2 = document.getElementById("row2").value;
+  var r3 = document.getElementById("row3").value;
+  var size = document.getElementById("textSize").value;
+
+  document.getElementById("prevLine1").innerText = r1;
+  document.getElementById("prevLine2").innerText = (size < 3) ? r2 : "";
+  document.getElementById("prevLine3").innerText = (size == 1) ? r3 : "";
+
+  // फॉन्ट साइज प्रिव्यू के लिए स्टाइल बदलना
+  var p1 = document.getElementById("prevLine1");
+  var p2 = document.getElementById("prevLine2");
+  var p3 = document.getElementById("prevLine3");
+
+  if (size == "1") {
+    p1.style.fontSize = "12px";
+    p2.style.fontSize = "12px";
+    p3.style.fontSize = "12px";
+  } else if (size == "2") {
+    p1.style.fontSize = "16px";
+    p2.style.fontSize = "16px";
+    p3.style.fontSize = "12px";
+  } else {
+    p1.style.fontSize = "24px";
+    p2.style.fontSize = "12px";
+    p3.style.fontSize = "12px";
+  }
+}
+
+function changeSize() {
+  var size = document.getElementById("textSize").value;
+  var r3Container = document.getElementById("row3Container");
+  
+  if (size == "1") { // Small - 3 rows
+    r3Container.style.display = "block";
+    document.getElementById("row1").maxLength = 21;
+    document.getElementById("row2").maxLength = 21;
+    document.getElementById("row3").maxLength = 21;
+  } else if (size == "2") { // Medium - 2 rows
+    r3Container.style.display = "none";
+    document.getElementById("row1").maxLength = 16;
+    document.getElementById("row2").maxLength = 16;
+    document.getElementById("row2").value = "";
+  } else { // Large - 1 row
+    r3Container.style.display = "none";
+    document.getElementById("row1").maxLength = 12;
+    document.getElementById("row2").value = "";
+    document.getElementById("row3").value = "";
+  }
+  
+  updatePreview();
+  sendData("size:" + size);
+}
 
 function sendData(msg) {
   if (mqttClient && mqttClient.isConnected()) {
@@ -66,42 +236,30 @@ function sendData(msg) {
     message.destinationName = topic;
     mqttClient.send(message);
   } else {
-    alert("Cloud is not connected yet!");
+    alert("JARVIS is not connected to cloud yet!");
   }
 }
 
 function sendText() {
-  var text = document.getElementById("messageBox").value;
-  if (text.length > 0) {
-    sendData(text);
-  }
+  var r1 = document.getElementById("row1").value;
+  var r2 = document.getElementById("row2").value;
+  var r3 = document.getElementById("row3").value;
+  var size = document.getElementById("textSize").value;
+
+  var fullText = r1 + "\n" + (size < 3 ? r2 : "") + "\n" + (size == 1 ? r3 : "");
+  sendData(fullText);
 }
 
 function clearScreen() {
-  document.getElementById("messageBox").value = "";
+  document.getElementById("row1").value = "";
+  document.getElementById("row2").value = "";
+  document.getElementById("row3").value = "";
+  updatePreview();
   sendData("clear");
 }
 
-// डिस्प्ले की क्षमता के अनुसार अक्षर सीमा (maxlength) सेट करना
-function changeSize() {
-  var size = document.getElementById("textSize").value;
-  var box = document.getElementById("messageBox");
-  
-  if (size == "1") {
-    box.maxLength = 105; // Small: 5 lines * 21 chars
-  } else if (size == "2") {
-    box.maxLength = 64;  // Medium: 4 lines * 16 chars
-  } else if (size == "3") {
-    box.maxLength = 36;  // Large: 3 lines * 12 chars
-  }
-
-  // अगर बड़ा टेक्स्ट लिखा हो और साइज छोटा करने पर लिमिट पार हो, तो ट्रिम हो जाए
-  if (box.value.length > box.maxLength) {
-    box.value = box.value.substring(0, box.maxLength);
-  }
-
-  sendData("size:" + size);
-}
+// Initial preview call
+updatePreview();
 </script>
 </body>
 </html>
