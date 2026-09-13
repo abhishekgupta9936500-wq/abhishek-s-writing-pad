@@ -23,8 +23,8 @@ select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px
 <div class="tagline">Inspired by Tony Stark</div>
 <div id="status">Connecting to Cloud...</div>
 
-<!-- शुरुआत में Small Size के हिसाब से maxlength 105 सेट है -->
-<textarea id="messageBox" placeholder="यहाँ अपना मैसेज टाइप करें..." maxlength="105"></textarea>
+<!-- यहाँ प्लेसहोलर "Drop your message" कर दिया गया है और Small के अनुसार max 105 अक्षर हैं -->
+<textarea id="messageBox" placeholder="Drop your message" maxlength="105"></textarea>
 
 <label for="textSize">Text Size: </label>
 <select id="textSize" onchange="changeSize()">
@@ -82,20 +82,20 @@ function clearScreen() {
   sendData("clear");
 }
 
-// टेक्स्ट साइज बदलने पर ओलेड की क्षमता के अनुसार अक्षर सीमा (maxlength) बदलना
+// डिस्प्ले की क्षमता के अनुसार अक्षर सीमा (maxlength) सेट करना
 function changeSize() {
   var size = document.getElementById("textSize").value;
   var box = document.getElementById("messageBox");
   
   if (size == "1") {
-    box.maxLength = 105; // Small के लिए max 105 अक्षर
+    box.maxLength = 105; // Small: 5 lines * 21 chars
   } else if (size == "2") {
-    box.maxLength = 60;  // Medium के लिए max 60 अक्षर
+    box.maxLength = 64;  // Medium: 4 lines * 16 chars
   } else if (size == "3") {
-    box.maxLength = 30;  // Large के लिए max 30 अक्षर
+    box.maxLength = 36;  // Large: 3 lines * 12 chars
   }
 
-  // अगर बड़ा टेक्स्ट लिखा हो और साइज छोटा करें तो एक्सट्रा टेक्स्ट ट्रिम हो जाए
+  // अगर बड़ा टेक्स्ट लिखा हो और साइज छोटा करने पर लिमिट पार हो, तो ट्रिम हो जाए
   if (box.value.length > box.maxLength) {
     box.value = box.value.substring(0, box.maxLength);
   }
