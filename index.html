@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-<title>IoT Notepad</title>
+<title>अभिषेक स्मार्ट नोटपैड</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 <style>
 body { text-align: center; background: #2c3e50; color: white; font-family: Arial; padding: 20px; }
@@ -13,10 +13,12 @@ button:active { background: #2980b9; }
 .clear-btn:active { background: #c0392b; }
 select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px; width: 40%; }
 #status { color: #f1c40f; font-weight: bold; margin-bottom: 15px; }
+.subtitle { color: #3498db; font-size: 18px; margin-top: -10px; margin-bottom: 15px; font-weight: bold; }
 </style>
 </head>
 <body>
 <h2>ESP32 IoT Notepad</h2>
+<div class="subtitle">अभिषेक स्मार्ट नोटपैड</div>
 <div id="status">Connecting to Cloud...</div>
 <textarea id="messageBox" placeholder="यहाँ अपना मैसेज टाइप करें..."></textarea>
 
@@ -27,15 +29,12 @@ select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px
 <option value="3">Large (3)</option>
 </select>
 
-
 <button onclick="sendText()">Send to OLED</button>
 <button class="clear-btn" onclick="clearScreen()">Clear OLED</button>
 <script>
 var mqttClient;
 var host = "broker.hivemq.com";
-// --- बदलाव यहाँ किया गया है ---
 var port = 8884; // HTTPS के लिए secure port 8884 और SSL ज़रूरी है
-// ----------------------------
 var topic = "esp32_notepad_mirzapur_123";
 function MQTTconnect() {
 var clientId = "NoteClient-" + Math.floor(Math.random() * 10000);
