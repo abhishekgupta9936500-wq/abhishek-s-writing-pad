@@ -22,7 +22,9 @@ select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px
 <div class="subtitle">Abhishek Smart Notepad</div>
 <div class="tagline">Inspired by Tony Stark</div>
 <div id="status">Connecting to Cloud...</div>
-<textarea id="messageBox" placeholder="यहाँ अपना मैसेज टाइप करें..."></textarea>
+
+<!-- शुरुआत में Small Size के हिसाब से maxlength 105 सेट है -->
+<textarea id="messageBox" placeholder="यहाँ अपना मैसेज टाइप करें..." maxlength="105"></textarea>
 
 <label for="textSize">Text Size: </label>
 <select id="textSize" onchange="changeSize()">
@@ -33,50 +35,72 @@ select { padding: 10px; font-size: 16px; border-radius: 5px; margin-bottom: 15px
 
 <button onclick="sendText()">Send to OLED</button>
 <button class="clear-btn" onclick="clearScreen()">Clear OLED</button>
+
 <script>
 var mqttClient;
 var host = "broker.hivemq.com";
-var port = 8884; // HTTPS के लिए secure port 8884 और SSL ज़रूरी है
+var port = 8884; // Secure WebSocket port
 var topic = "esp32_notepad_mirzapur_123";
+
 function MQTTconnect() {
-var clientId = "NoteClient-" + Math.floor(Math.random() * 10000);
-mqttClient = new Paho.MQTT.Client(host, port, clientId);
-var options = {
-useSSL: true, // यह लाइन जोड़ दी गई है ताकि GitHub की वेबसाइट से सिक्योर कनेक्शन बन सके
-onSuccess: function() {
-document.getElementById("status").innerText = "Ready to Send!";
-document.getElementById("status").style.color = "#2ecc71";
-},
-onFailure: function(message) {
-document.getElementById("status").innerText = "Connection Failed: " + message.errorMessage;
-document.getElementById("status").style.color = "#e74c3c";
-}
-};
-mqttClient.connect(options);
+  var clientId = "NoteClient-" + Math.floor(Math.random() * 10000);
+  mqttClient = new Paho.MQTT.Client(host, port, clientId);
+  var options = {
+    useSSL: true,
+    onSuccess: function() {
+      document.getElementById("status").innerText = "Ready to Send!";
+      document.getElementById("status").style.color = "#2ecc71";
+    },
+    onFailure: function(message) {
+      document.getElementById("status").innerText = "Connection Failed: " + message.errorMessage;
+      document.getElementById("status").style.color = "#e74c3c";
+    }
+  };
+  mqttClient.connect(options);
 }
 MQTTconnect();
+
 function sendData(msg) {
-if (mqttClient && mqttClient.isConnected()) {
-var message = new Paho.MQTT.Message(msg);
-message.destinationName = topic;
-mqttClient.send(message);
-} else {
-alert("Cloud is not connected yet!");
+  if (mqttClient && mqttClient.isConnected()) {
+    var message = new Paho.MQTT.Message(msg);
+    message.destinationName = topic;
+    mqttClient.send(message);
+  } else {
+    alert("Cloud is not connected yet!");
+  }
 }
-}
+
 function sendText() {
-var text = document.getElementById("messageBox").value;
-if (text.length > 0) {
-sendData(text);
+  var text = document.getElementById("messageBox").value;
+  if (text.length > 0) {
+    sendData(text);
+  }
 }
-}
+
 function clearScreen() {
-document.getElementById("messageBox").value = "";
-sendData("clear");
+  document.getElementById("messageBox").value = "";
+  sendData("clear");
 }
+
+// टेक्स्ट साइज बदलने पर ओलेड की क्षमता के अनुसार अक्षर सीमा (maxlength) बदलना
 function changeSize() {
-var size = document.getElementById("textSize").value;
-sendData("size:" + size);
+  var size = document.getElementById("textSize").value;
+  var box = document.getElementById("messageBox");
+  
+  if (size == "1") {
+    box.maxLength = 105; // Small के लिए max 105 अक्षर
+  } else if (size == "2") {
+    box.maxLength = 60;  // Medium के लिए max 60 अक्षर
+  } else if (size == "3") {
+    box.maxLength = 30;  // Large के लिए max 30 अक्षर
+  }
+
+  // अगर बड़ा टेक्स्ट लिखा हो और साइज छोटा करें तो एक्सट्रा टेक्स्ट ट्रिम हो जाए
+  if (box.value.length > box.maxLength) {
+    box.value = box.value.substring(0, box.maxLength);
+  }
+
+  sendData("size:" + size);
 }
 </script>
 </body>
