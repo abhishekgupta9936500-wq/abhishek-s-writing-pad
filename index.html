@@ -18,7 +18,7 @@ h2 { color: #00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.6); margin-bottom: 5
 
 #status { color: #facc15; font-weight: bold; margin-bottom: 15px; font-size: 14px; text-shadow: 0 0 5px rgba(250,204,21,0.5); }
 
-/* OLED Live Preview Screen (Stark HUD style) */
+/* OLED Live Preview Screen */
 .oled-preview {
     width: 256px;
     height: 128px;
@@ -41,7 +41,6 @@ h2 { color: #00f0ff; text-shadow: 0 0 10px rgba(0,240,255,0.6); margin-bottom: 5
     line-height: 1.2;
 }
 
-/* Row Input Fields */
 .input-container {
     width: 90%;
     max-width: 350px;
@@ -96,9 +95,8 @@ button {
     max-width: 170px;
     font-weight: bold;
     box-shadow: 0 0 10px rgba(0,240,255,0.3);
-    transition: 0.2s;
 }
-button:hover { background: linear-gradient(135deg, #0369a1, #0284c7); box-shadow: 0 0 15px rgba(0,240,255,0.6); }
+button:hover { box-shadow: 0 0 15px rgba(0,240,255,0.6); }
 button:active { transform: scale(0.98); }
 
 .clear-btn { 
@@ -106,7 +104,6 @@ button:active { transform: scale(0.98); }
     border-color: #ef4444; 
     box-shadow: 0 0 10px rgba(239,68,68,0.3);
 }
-.clear-btn:hover { background: linear-gradient(135deg, #991b1b, #dc2626); box-shadow: 0 0 15px rgba(239,68,68,0.6); }
 </style>
 </head>
 <body>
@@ -116,14 +113,12 @@ button:active { transform: scale(0.98); }
 <div class="tagline">J.A.R.V.I.S. OLED Control HUD</div>
 <div id="status">Connecting to Cloud...</div>
 
-<!-- लाइव ओलेड डिस्प्ले प्रिव्यू (वेबसाइट पर रियल-टाइम दिखेगा) -->
 <div class="oled-preview" id="oledPreview">
     <div class="preview-line" id="prevLine1"></div>
     <div class="preview-line" id="prevLine2"></div>
     <div class="preview-line" id="prevLine3"></div>
 </div>
 
-<!-- रो-वाइज़ इनपुट बॉक्स -->
 <div class="input-container">
     <label>Row 1:</label>
     <input type="text" id="row1" class="row-input" placeholder="Type row 1..." maxlength="21" oninput="updatePreview()">
@@ -153,8 +148,9 @@ button:active { transform: scale(0.98); }
 
 <script>
 var mqttClient;
-var host = "broker.hivemq.com";
-var port = 8884;
+// नया और स्टेबल ब्रोकर (EMQX)
+var host = "broker.emqx.io";
+var port = 8084; // EMQX Secure WebSocket Port
 var topic = "esp32_notepad_mirzapur_123";
 
 function MQTTconnect() {
@@ -163,7 +159,7 @@ function MQTTconnect() {
   var options = {
     useSSL: true,
     onSuccess: function() {
-      document.getElementById("status শক্তির").innerText = "JARVIS Connected & Ready!";
+      document.getElementById("status").innerText = "JARVIS Connected & Ready!";
       document.getElementById("status").style.color = "#00f0ff";
     },
     onFailure: function(message) {
@@ -185,23 +181,16 @@ function updatePreview() {
   document.getElementById("prevLine2").innerText = (size < 3) ? r2 : "";
   document.getElementById("prevLine3").innerText = (size == 1) ? r3 : "";
 
-  // फॉन्ट साइज प्रिव्यू के लिए स्टाइल बदलना
   var p1 = document.getElementById("prevLine1");
   var p2 = document.getElementById("prevLine2");
   var p3 = document.getElementById("prevLine3");
 
   if (size == "1") {
-    p1.style.fontSize = "12px";
-    p2.style.fontSize = "12px";
-    p3.style.fontSize = "12px";
+    p1.style.fontSize = "12px"; p2.style.fontSize = "12px"; p3.style.fontSize = "12px";
   } else if (size == "2") {
-    p1.style.fontSize = "16px";
-    p2.style.fontSize = "16px";
-    p3.style.fontSize = "12px";
+    p1.style.fontSize = "16px"; p2.style.fontSize = "16px"; p3.style.fontSize = "12px";
   } else {
-    p1.style.fontSize = "24px";
-    p2.style.fontSize = "12px";
-    p3.style.fontSize = "12px";
+    p1.style.fontSize = "24px"; p2.style.fontSize = "12px"; p3.style.fontSize = "12px";
   }
 }
 
@@ -209,17 +198,17 @@ function changeSize() {
   var size = document.getElementById("textSize").value;
   var r3Container = document.getElementById("row3Container");
   
-  if (size == "1") { // Small - 3 rows
+  if (size == "1") { 
     r3Container.style.display = "block";
     document.getElementById("row1").maxLength = 21;
     document.getElementById("row2").maxLength = 21;
     document.getElementById("row3").maxLength = 21;
-  } else if (size == "2") { // Medium - 2 rows
+  } else if (size == "2") { 
     r3Container.style.display = "none";
     document.getElementById("row1").maxLength = 16;
     document.getElementById("row2").maxLength = 16;
     document.getElementById("row2").value = "";
-  } else { // Large - 1 row
+  } else { 
     r3Container.style.display = "none";
     document.getElementById("row1").maxLength = 12;
     document.getElementById("row2").value = "";
@@ -258,7 +247,6 @@ function clearScreen() {
   sendData("clear");
 }
 
-// Initial preview call
 updatePreview();
 </script>
 </body>
